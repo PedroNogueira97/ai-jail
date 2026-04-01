@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -23,8 +23,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && npm config set registry https://registry.npmjs.org/
 
 # Instala globais como ROOT (evita erro de permissão)
+# basic-memory exige Python 3.12+ (Ubuntu 24.04); --break-system-packages: PEP 668 no pip do sistema
 RUN npm install -g @google/gemini-cli@latest --unsafe-perm=true \
-    && pip3 install basic-memory
+    && pip3 install --break-system-packages basic-memory
 
 # Usuário não-root
 RUN useradd -ms /bin/bash dev && \
