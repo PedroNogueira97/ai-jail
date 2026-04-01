@@ -31,6 +31,7 @@ Before writing code:
 - read relevant project documentation
 - inspect existing code, tests, and patterns
 - identify constraints, dependencies, and risks
+- optionally search memory for relevant past context
 
 Do not begin implementation before understanding the current structure.
 

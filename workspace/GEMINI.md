@@ -26,6 +26,7 @@ When instructions conflict, follow this order of precedence:
    - `AGENT_WORKFLOW.md`
    - `GIT_WORKFLOW.md`
    - `PROJECT.md`
+   - `MEMORY.md`
 3. This `GEMINI.md`
 4. Default model behavior
 
@@ -42,6 +43,49 @@ Project-specific instructions always override global instructions.
 - Explain assumptions clearly when they exist
 
 ---
+
+## Memory System (basic memory)
+
+This environment includes **basic-memory** with persistent storage at:
+
+- **Inside the container:** `/home/dev/.memory` (see `MEMORY_PATH` in `docker-compose.yml`)
+- **On the host (this repo):** `./memory` (bind-mounted to the path above)
+
+This memory stores historical context such as:
+
+- previous decisions
+- implementation notes
+- refactors
+- known issues
+- past solutions
+
+### Usage Rules
+
+- Memory is a **secondary source of context**, not the source of truth
+- Always prioritize:
+  1. Project documentation (PRD, ARCHITECTURE, etc.)
+  2. Current codebase
+  3. Then memory
+
+### When to Use Memory
+
+Use memory when:
+
+- understanding past decisions not documented elsewhere
+- investigating recurring issues
+- maintaining consistency with previous implementations
+- retrieving context across sessions
+
+### When Writing to Memory
+
+After completing meaningful work, store:
+
+- decisions made
+- tradeoffs
+- important fixes
+- architectural changes
+
+Keep entries concise and structured.
 
 ## Engineering Principles
 
