@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  ai-jail:
+    build: .
+    container_name: ai-jail
+    volumes:
+      - ./workspace:/workspace
+      - ./config:/home/dev/.config
+      - ./memory:/home/dev/.memory
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - MEMORY_PATH=/home/dev/.memory
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
