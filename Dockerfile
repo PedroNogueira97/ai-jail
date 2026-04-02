@@ -6,7 +6,6 @@ ENV HOME=/home/dev
 ENV WORKSPACE=/workspace
 ENV MEMORY_PATH=/home/dev/.memory
 
-# Base + deps
 RUN apt update && apt install -y \
     curl \
     git \
@@ -21,13 +20,11 @@ RUN apt update && apt install -y \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-# Node 20
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt install -y nodejs \
     && npm config set registry https://registry.npmjs.org/ \
     && rm -rf /var/lib/apt/lists/*
 
-# GitHub CLI (instalação oficial via apt/repo oficial)
 RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
       | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
     && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
@@ -37,21 +34,17 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     && apt install -y gh \
     && rm -rf /var/lib/apt/lists/*
 
-# Ferramentas globais
 RUN npm install -g @google/gemini-cli@latest --unsafe-perm=true \
     && pip3 install --break-system-packages basic-memory
 
-# Usuário dev com sudo sem senha
 RUN useradd -m -s /bin/bash dev \
     && usermod -aG sudo dev \
     && echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev \
     && chmod 0440 /etc/sudoers.d/dev
 
-# Cria diretórios e garante ownership correto
 RUN mkdir -p /workspace /home/dev/.config /home/dev/.memory \
     && chown -R dev:dev /workspace /home/dev
 
-# Script de entrada para corrigir permissões de volumes montados
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 

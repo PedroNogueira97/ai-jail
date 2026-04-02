@@ -13,6 +13,8 @@ services:
       GH_TOKEN: ${GH_TOKEN}
       MEMORY_PATH: /home/dev/.memory
       HOME: /home/dev
+      GIT_USER_NAME: ${GIT_USER_NAME}
+      GIT_USER_EMAIL: ${GIT_USER_EMAIL}
     stdin_open: true
     tty: true
     restart: unless-stopped
