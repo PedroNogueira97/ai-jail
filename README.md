@@ -17,7 +17,7 @@ A pasta **`workspace/`** reúne convenções para agentes (`GEMINI.md`, `AGENT_W
 
 ### Memória (basic-memory)
 
-O **`basic-memory`** usa o volume montado em **`MEMORY_PATH`** (`/home/dev/.memory` no container, **`/memory`** no host). A documentação em **`workspace/MEMORY.md`** define o uso da memória pelos agentes (contexto auxiliar, não fonte de verdade).
+O **`basic-memory`** usa o volume montado em **`MEMORY_PATH`** (`/home/dev/.memory` no container, **`./memory`** no host). A documentação em **`workspace/MEMORY.md`** define o uso da memória pelos agentes (contexto auxiliar, não fonte de verdade).
 
 ## Pré-requisitos
 
@@ -39,8 +39,8 @@ GIT_USER_EMAIL=seu-email@exemplo.com
 | Variável | Uso |
 |----------|-----|
 | `GOOGLE_API_KEY` | Gemini CLI / ferramentas que consumam a API Google. |
-| `GH_TOKEN` | Token clássico do GitHub com permissões adequadas (ex.: `repo`) para `gh` e push sem fluxo interativo, quando aplicável. |
-| `GIT_USER_NAME` / `GIT_USER_EMAIL` | Repassadas ao serviço para documentação; o Git em si usa `git config` (passo abaixo). |
+| `GH_TOKEN` | Token clássico do GitHub (ex.: âmbito `repo`) — o `gh` usa esta variável quando está definida. |
+| `GIT_USER_NAME` / `GIT_USER_EMAIL` | O **`docker-entrypoint.sh`** aplica automaticamente `git config --global user.name` e `user.email` ao iniciar o container. **Não precisa** de criar nem editar `.gitconfig` à mão no repositório. |
 
 **Segurança:** nunca commite `.env` nem tokens. O GitHub pode bloquear push se segredos aparecerem em ficheiros versionados (ex.: evitar versionar `./config/gh/`).
 
@@ -58,38 +58,36 @@ O `docker-compose.yml` expõe várias **portas** no host (3000, 4000, … até 1
 
 ## Passo a passo: Git e GitHub (`gh`) no container
 
-Execute estes passos **dentro do container** (`docker exec -it ai-jail bash`), na primeira vez ou após recriar a imagem sem persistir `~/.gitconfig`.
-
 ### 1. Identidade do Git (commits)
 
-```bash
-git config --global user.name "Seu Nome"
-git config --global user.email "seu-email@exemplo.com"
-```
+Preencha **`GIT_USER_NAME`** e **`GIT_USER_EMAIL`** no `.env` e suba o container (`docker compose up -d`). O script **`docker-entrypoint.sh`** configura o Git automaticamente para o utilizador `dev` — não é necessário correr `git config --global` manualmente nem manter um ficheiro `.gitconfig` no projeto.
 
-*(O ficheiro fica em `/home/dev/.gitconfig`. Se apenas o diretório `~/.config` estiver montado em volume, este passo pode ter de ser repetido após recriar o container — nesse caso, volte a executar os dois comandos.)*
+Se alterar nome ou email no `.env`, **reinicie o container** (`docker compose up -d`). Para confirmar:
+
+```bash
+git config --global user.name
+git config --global user.email
+```
 
 ### 2. Autenticação do `gh`
 
-**Opção A — interativa (recomendada para desenvolvimento)**
+Com **`GH_TOKEN`** já definido no `.env`, o `gh` reconhece o token na sessão. Muitos utilizadores completam o login com uma sessão **HTTPS** interativa:
 
 ```bash
 gh auth login
 ```
 
-Siga as perguntas (HTTPS, GitHub.com, login via browser ou token). A sessão pode ficar guardada em **`./config`** no host (montado em `/home/dev/.config`), consoante o que o `gh` gravar.
+Escolha **HTTPS**, **GitHub.com** e o método que preferir (navegador ou token). O estado de autenticação pode persistir em **`./config`** no host (volume montado em `/home/dev/.config`).
 
-**Opção B — token via ambiente**
-
-Defina `GH_TOKEN` no `.env` (veja tabela acima) e confira:
+Confirme:
 
 ```bash
 gh auth status
 ```
 
-Se falhar, confirme que o token tem âmbito `repo` (e organização, se for o caso).
+Se algo falhar, verifique o âmbito do token (`repo`, e organização se aplicável).
 
-### 3. Integração Git ↔ `gh` (opcional mas útil)
+### 3. Integração Git ↔ `gh` (opcional)
 
 ```bash
 gh auth setup-git
@@ -114,7 +112,8 @@ O script gera uma pasta numerada em `/workspace`, ficheiros a partir dos templat
 
 - Ficheiro **`workspace/.project-bootstrap.conf`** presente e válido.
 - Templates referenciados pelo script (ex.: `README.tpl.md`, `docs/*.tpl.md`).
-- `gh` autenticado e Git com `user.name` / `user.email` configurados (secção anterior).
+- `GIT_USER_NAME` e `GIT_USER_EMAIL` no `.env` (identidade Git aplicada pelo entrypoint).
+- `gh` autenticado e, se usar `gh repo create`, token/sessão válidos (secção anterior).
 
 ### Execução no container
 
