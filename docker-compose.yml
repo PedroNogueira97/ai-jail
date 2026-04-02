@@ -9,8 +9,9 @@ services:
       - ./config:/home/dev/.config
       - ./memory:/home/dev/.memory
     environment:
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - MEMORY_PATH=/home/dev/.memory
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      MEMORY_PATH: /home/dev/.memory
+      HOME: /home/dev
     stdin_open: true
     tty: true
     restart: unless-stopped
