@@ -16,6 +16,10 @@ info() {
   echo "==> $1"
 }
 
+ensure_sudo_available() {
+  command_exists sudo || error "sudo não está disponível no ambiente."
+}
+
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
@@ -239,6 +243,7 @@ validate_input() {
 
 main() {
   load_config
+  ensure_sudo_available
   ensure_git_identity
 
   if [ "$#" -ge 3 ]; then
@@ -266,7 +271,10 @@ main() {
   [ ! -e "$PROJECT_DIR" ] || error "O diretório já existe: $PROJECT_DIR"
 
   info "Criando estrutura do projeto"
-  mkdir -p "$DOCS_DIR"
+  sudo mkdir -p "$DOCS_DIR"
+  # Garante que o usuário atual possa escrever nos arquivos gerados a seguir.
+  sudo chown -R "$(id -u):$(id -g)" "$PROJECT_DIR"
+  sudo chmod -R u+rwX "$PROJECT_DIR"
 
   render_template "$TEMPLATES_DIR/README.tpl.md" "$PROJECT_DIR/README.md"
   render_template "$TEMPLATES_DIR/docs/PRD.tpl.md" "$DOCS_DIR/PRD.md"
