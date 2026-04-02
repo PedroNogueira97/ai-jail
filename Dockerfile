@@ -41,8 +41,9 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
 RUN npm install -g @google/gemini-cli@latest --unsafe-perm=true \
     && pip3 install --break-system-packages basic-memory
 
-# Usuário dev com sudo sem senha
-RUN useradd -m -s /bin/bash dev \
+# Usuário dev com UID/GID 1000 para alinhar com host Linux/WSL mais comum
+RUN groupadd -g 1000 dev \
+    && useradd -m -u 1000 -g 1000 -s /bin/bash dev \
     && usermod -aG sudo dev \
     && echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev \
     && chmod 0440 /etc/sudoers.d/dev

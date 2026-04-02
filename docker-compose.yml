@@ -4,12 +4,14 @@ services:
   ai-jail:
     build: .
     container_name: ai-jail
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     volumes:
       - ./workspace:/workspace
       - ./config:/home/dev/.config
       - ./memory:/home/dev/.memory
     environment:
       GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      GH_TOKEN: ${GH_TOKEN}
       MEMORY_PATH: /home/dev/.memory
       HOME: /home/dev
     stdin_open: true
