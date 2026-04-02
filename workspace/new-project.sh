@@ -184,6 +184,16 @@ create_remote_with_gh() {
     --push
 }
 
+ensure_github_auth() {
+  command -v gh >/dev/null 2>&1 || error "gh não instalado"
+
+  if ! gh auth status >/dev/null 2>&1; then
+    error "GH_TOKEN não configurado"
+  fi
+
+  gh auth setup-git >/dev/null 2>&1 || error "Falha ao configurar git com gh"
+}
+
 init_git_repository() {
   local project_dir="$1"
 
