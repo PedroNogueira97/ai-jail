@@ -1,0 +1,50 @@
+name: AI Jail CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate-environment:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create temporary .env
+        run: |
+          cat > .env <<'EOF'
+          GOOGLE_API_KEY=dummy
+          GH_TOKEN=dummy
+          GIT_USER_NAME=CI User
+          GIT_USER_EMAIL=ci@example.com
+          EOF
+
+      - name: Validate Docker Compose
+        run: docker compose config
+
+      - name: Build environment
+        run: docker compose build
+
+      - name: Start container
+        run: docker compose up -d
+
+      - name: Check required tools
+        run: |
+          docker exec ai-jail bash -lc "git --version"
+          docker exec ai-jail bash -lc "gh --version"
+          docker exec ai-jail bash -lc "node --version"
+          docker exec ai-jail bash -lc "python3 --version"
+          docker exec ai-jail bash -lc "basic-memory --help >/dev/null 2>&1 || python3 -m basic_memory --help >/dev/null 2>&1 || true"
+
+      - name: Check bootstrap script
+        run: |
+          docker exec ai-jail bash -lc "test -f /workspace/new-project.sh"
+          docker exec ai-jail bash -lc "test -x /workspace/new-project.sh || chmod +x /workspace/new-project.sh"
+
+      - name: Stop container
+        if: always()
+        run: docker compose down -v
