@@ -193,6 +193,133 @@ ai-jail/
 └── memory/                   # Volume: basic-memory
 ```
 
+---
+
+## CI do ambiente (`ai-jail`)
+
+Este repositório NÃO representa uma aplicação de produção.  
+Ele é um **ambiente de desenvolvimento com IA**, portanto não possui deploy.
+
+Ainda assim, existe um pipeline de **CI (Continuous Integration)** para garantir que mudanças no ambiente não quebrem o workflow.
+
+### O que o CI valida
+
+O workflow (`.github/workflows/ci.yml`) executa:
+
+- Validação do `docker-compose.yml`
+- Build da imagem Docker
+- Subida do container
+- Verificação das principais ferramentas:
+  - `git`
+  - `gh` (GitHub CLI)
+  - `node`
+  - `python`
+  - `basic-memory`
+- Verificação do script:
+  - `/workspace/new-project.sh`
+
+### Objetivo
+
+Garantir que o ambiente continue funcional para:
+
+- criação de projetos
+- uso de agentes (Gemini CLI)
+- uso de memória (`basic-memory`)
+- integração com GitHub (`gh`)
+
+---
+
+⚠️ Este CI NÃO faz deploy e nunca fará.
+
+O deploy acontece nos **projetos gerados dentro do `/workspace`**, não neste repositório.
+
+---
+
+## Arquitetura de CI/CD
+
+Este projeto segue uma arquitetura separada:
+
+### 🧱 `ai-jail` (este repositório)
+
+Responsável por:
+
+- ambiente Docker
+- ferramentas (Gemini CLI, basic-memory, gh)
+- convenções de desenvolvimento
+- templates de projetos
+- script de bootstrap (`new-project.sh`)
+
+👉 NÃO é uma aplicação deployável
+
+---
+
+### 🚀 Projetos dentro de `/workspace`
+
+Cada projeto criado com:
+
+```bash
+/workspace/new-project.sh
+```
+é um repositório independente, responsável por:
+
+- sua própria aplicação
+- testes
+- build
+- deploy
+- configuração de produção
+
+👉 É nesses projetos que o CI/CD completo acontece
+
+### Fluxo esperado
+
+ai-jail (ambiente)
+   ↓
+new-project.sh
+   ↓
+novo repositório criado (GitHub)
+   ↓
+CI/CD próprio do projeto
+   ↓
+deploy na VPS/Servidor
+
+### Templates de CI/CD para projetos
+
+Já existe uma estrutura preparada em:
+
+```bash
+/workspace/project-templates/
+```
+
+Incluindo:
+
+```bash
+common/
+  .github/workflows/
+    ci.yml.tpl
+    deploy.yml.tpl
+  ops/deploy.sh.tpl
+  docs/DEPLOY.md.tpl
+```
+
+Esses templates permitem que novos projetos já nasçam com:
+
+- pipeline de CI automático
+- pipeline de deploy para VPS via SSH
+- script de deploy com Docker
+- documentação de configuração
+
+### ⚠️ Importante
+
+Atualmente, esses templates ainda não são aplicados automaticamente.
+
+👉 A integração com o new-project.sh será implementada futuramente.
+
+Ou seja:
+
+- a estrutura já existe ✅
+- o pipeline já está pronto ✅
+- mas ainda precisa ser conectado ao bootstrap ❌
+
 ## Documentação em `workspace/`
 
 - **`PROJECT.md`** — Estrutura e leitura de projetos em subpastas.
