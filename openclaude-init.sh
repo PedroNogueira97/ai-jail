@@ -1,10 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e
 
-# configura provider
-echo "/provider gemini" | openclaude
+echo "Starting OpenClaude with OpenRouter..."
+echo "Model: ${OPENAI_MODEL:-not-set}"
+echo "Base URL: ${OPENAI_BASE_URL:-not-set}"
 
-# configura modelo
-echo "/model gemini-1.5-pro" | openclaude
+if [ "${OPENCLAUDE_HEADLESS:-0}" = "1" ]; then
+  echo "Headless mode enabled. Exiting after validation."
+  command -v openclaude >/dev/null 2>&1
+  exit 0
+fi
 
-# entra no CLI interativo
 exec openclaude

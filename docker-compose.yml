@@ -54,7 +54,16 @@ services:
       GH_TOKEN: ${GH_TOKEN}
       GIT_USER_NAME: ${GIT_USER_NAME}
       GIT_USER_EMAIL: ${GIT_USER_EMAIL}
-      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      # OpenClaude -> OpenAI-compatible mode
+      CLAUDE_CODE_USE_OPENAI: "1"
+      OPENAI_API_KEY: ${OPENROUTER_API_KEY}
+      OPENAI_BASE_URL: https://openrouter.ai/api/v1
+      OPENAI_MODEL: qwen/qwen3-coder:free
+      # Optional but recommended by OpenRouter
+      HTTP-Referer: https://github.com/PedroNogueira/ai-jail
+      X-OpenRouter-Title: AI Jail
+      # Optional for CI/headless handling if you use it
+      OPENCLAUDE_HEADLESS: "0"
     stdin_open: true
     tty: true
     restart: unless-stopped
