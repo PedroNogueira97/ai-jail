@@ -2,7 +2,9 @@ version: "3.9"
 
 services:
   ai-jail:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: ai-jail
     volumes:
       - ./workspace:/workspace
@@ -19,14 +21,40 @@ services:
       GIT_USER_NAME: ${GIT_USER_NAME}
       GIT_USER_EMAIL: ${GIT_USER_EMAIL}
     ports:
-      - 3000:3000
-      - 4000:4000
-      - 5000:5000
-      - 6000:6000
-      - 7000:7000
-      - 8000:8000
-      - 9000:9000
-      - 10000:10000
+      - "3000:3000"
+      - "4000:4000"
+      - "5000:5000"
+      - "6000:6000"
+      - "7000:7000"
+      - "8000:8000"
+      - "9000:9000"
+      - "10000:10000"
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+  openclaude:
+    build:
+      context: .
+      dockerfile: Dockerfile.openclaude
+    container_name: openclaude
+    depends_on:
+      - ai-jail
+    volumes:
+      - ./workspace:/workspace
+      - ./config:/home/dev/.config
+      - ./memory:/home/dev/.memory
+      - ./openclaude-config:/home/dev/.config
+      - ~/.ssh/id_ed25519.pub:/home/dev/.ssh/id_ed25519.pub:ro
+      - ~/.ssh/config:/home/dev/.ssh/config:ro
+      - ~/.ssh/known_hosts:/home/dev/.ssh/known_hosts:ro
+    environment:
+      HOME: /home/dev
+      MEMORY_PATH: /home/dev/.memory
+      GH_TOKEN: ${GH_TOKEN}
+      GIT_USER_NAME: ${GIT_USER_NAME}
+      GIT_USER_EMAIL: ${GIT_USER_EMAIL}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
     stdin_open: true
     tty: true
     restart: unless-stopped
