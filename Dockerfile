@@ -42,8 +42,9 @@ RUN useradd -m -s /bin/bash dev \
     && echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev \
     && chmod 0440 /etc/sudoers.d/dev
 
-RUN mkdir -p /workspace /home/dev/.config /home/dev/.memory \
-    && chown -R dev:dev /workspace /home/dev
+RUN mkdir -p /workspace /home/dev/.config /home/dev/.memory /home/dev/.ssh \
+    && chown -R dev:dev /workspace /home/dev \
+    && chmod 700 /home/dev/.ssh
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
