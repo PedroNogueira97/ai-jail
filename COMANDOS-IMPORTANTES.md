@@ -56,6 +56,10 @@ Quando ficheiros criados no container ficam com UID errado e o editor dá *permi
 docker run --rm -v "$(pwd)/workspace:/w" alpine sh -c 'chown -R "$(id -u):$(id -g)" /w && chmod -R u+rwX /w'
 ```
 
+```bash
+sudo chmod -R g+rwX,o-rwx /home/pedro/ai-jail/workspace
+```
+
 *(Executar na pasta raiz do repo `ai-jail` no host.)*
 
 ---

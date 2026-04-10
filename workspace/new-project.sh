@@ -42,7 +42,7 @@ load_config() {
   : "${WORKSPACE:?WORKSPACE não definido no config}"
   : "${TEMPLATES_DIR:?TEMPLATES_DIR não definido no config}"
   : "${DEFAULT_BRANCH:=main}"
-  : "${GITHUB_VISIBILITY:=private}"
+  : "${GITHUB_VISIBILITY:=public}"
   : "${GITHUB_OWNER:=}"
   : "${AUTO_CREATE_REMOTE:=true}"
 
@@ -51,8 +51,20 @@ load_config() {
   require_file "$TEMPLATES_DIR/README.tpl.md"
   require_file "$TEMPLATES_DIR/docs/PRD.tpl.md"
   require_file "$TEMPLATES_DIR/docs/ARCHITECTURE.tpl.md"
-  require_file "$TEMPLATES_DIR/docs/GEMINI.local.tpl.md"
-  require_file "$TEMPLATES_DIR/docs/TASKS.tpl.md"
+  require_file "$TEMPLATES_DIR/docs/OPENCLAUDE.local.tpl.md"
+  require_file "$TEMPLATES_DIR/.github/workflows/ci.yml.tpl"
+  require_file "$TEMPLATES_DIR/.github/workflows/deploy.yml.tpl"
+  if [[ "PROJECT_TYPE" = 'frontend' ]]; then
+    require_file "$TEMPLATES_DIR/frontend/workflows/.env.example"
+    require_file "$TEMPLATES_DIR/frontend/workflows/docker-compose.prod.yml"
+    require_file "$TEMPLATES_DIR/frontend/workflows/nginx.conf"
+  else
+    require_file "$TEMPLATES_DIR/backend/workflows/.env.example"
+    require_file "$TEMPLATES_DIR/backend/workflows/docker-compose.prod.yml"
+    require_file "$TEMPLATES_DIR/backend/workflows/Dockerfile"
+  fi
+  require_file "$TEMPLATES_DIR/ops/DEPLOY.tpl.md"
+  require_file "$TEMPLATES_DIR/ops/deploy.tpl.sh"
 }
 
 slugify() {
@@ -279,7 +291,7 @@ main() {
   render_template "$TEMPLATES_DIR/README.tpl.md" "$PROJECT_DIR/README.md"
   render_template "$TEMPLATES_DIR/docs/PRD.tpl.md" "$DOCS_DIR/PRD.md"
   render_template "$TEMPLATES_DIR/docs/ARCHITECTURE.tpl.md" "$DOCS_DIR/ARCHITECTURE.md"
-  render_template "$TEMPLATES_DIR/docs/GEMINI.local.tpl.md" "$DOCS_DIR/GEMINI.local.md"
+  render_template "$TEMPLATES_DIR/docs/OPENCLAUDE.local.tpl.md" "$DOCS_DIR/OPENCLAUDE.local.md"
   render_template "$TEMPLATES_DIR/docs/TASKS.tpl.md" "$DOCS_DIR/TASKS.md"
 
   create_gitignore "$PROJECT_DIR/.gitignore"

@@ -7,6 +7,7 @@ ENV WORKSPACE=/workspace
 ENV MEMORY_PATH=/home/dev/.memory
 
 RUN apt update && apt install -y \
+    bash \
     curl \
     git \
     vim \
@@ -20,6 +21,15 @@ RUN apt update && apt install -y \
     python3-pip \
     openssh-client \
     ripgrep \
+    findutils \
+    coreutils \
+    fd-find \
+    grep \
+    sed \
+    gawk \
+    tree \
+    jq \
+    && ln -s $(which fdfind) /usr/local/bin/fd \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
