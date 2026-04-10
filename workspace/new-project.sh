@@ -55,13 +55,13 @@ load_config() {
   require_file "$TEMPLATES_DIR/.github/workflows/ci.yml.tpl"
   require_file "$TEMPLATES_DIR/.github/workflows/deploy.yml.tpl"
   if [[ "PROJECT_TYPE" = 'frontend' ]]; then
-    require_file "$TEMPLATES_DIR/frontend/workflows/.env.example"
-    require_file "$TEMPLATES_DIR/frontend/workflows/docker-compose.prod.yml"
+    require_file "$TEMPLATES_DIR/frontend/.env.example"
+    require_file "$TEMPLATES_DIR/frontend/docker-compose.prod.yml"
     require_file "$TEMPLATES_DIR/frontend/workflows/nginx.conf"
   else
-    require_file "$TEMPLATES_DIR/backend/workflows/.env.example"
-    require_file "$TEMPLATES_DIR/backend/workflows/docker-compose.prod.yml"
-    require_file "$TEMPLATES_DIR/backend/workflows/Dockerfile"
+    require_file "$TEMPLATES_DIR/backend/.env.example"
+    require_file "$TEMPLATES_DIR/backend/docker-compose.prod.yml"
+    require_file "$TEMPLATES_DIR/backend/Dockerfile"
   fi
   require_file "$TEMPLATES_DIR/ops/DEPLOY.tpl.md"
   require_file "$TEMPLATES_DIR/ops/deploy.tpl.sh"
@@ -279,6 +279,10 @@ main() {
 
   PROJECT_DIR="${WORKSPACE}/${LOCAL_DIR_NAME}"
   DOCS_DIR="${PROJECT_DIR}/docs"
+  GITHUB_DIR="${PROJECT_DIR}/.github/workspace"
+  FRONTEND_DIR="${PROJECT_DIR}/frontend"
+  BACKEND_DIR="${PROJECT_DIR}/backend"
+  OPS_DIR="${PROJECT_DIR}/ops"
 
   [ ! -e "$PROJECT_DIR" ] || error "O diretório já existe: $PROJECT_DIR"
 
@@ -293,6 +297,21 @@ main() {
   render_template "$TEMPLATES_DIR/docs/ARCHITECTURE.tpl.md" "$DOCS_DIR/ARCHITECTURE.md"
   render_template "$TEMPLATES_DIR/docs/OPENCLAUDE.local.tpl.md" "$DOCS_DIR/OPENCLAUDE.local.md"
   render_template "$TEMPLATES_DIR/docs/TASKS.tpl.md" "$DOCS_DIR/TASKS.md"
+
+  render_template "$TEMPLATES_DIR/.github/workflows/ci.yml.tpl" "$GITHUB_DIR/ci.yml"
+  render_template "$TEMPLATES_DIR/.github/workflows/deploy.yml.tpl" "$GITHUB_DIR/deploy.yml"
+  if [[ "PROJECT_TYPE" = 'frontend' ]]; then
+    require_file "$TEMPLATES_DIR/frontend/.env.example" "$FRONTEND_DIR/.env.example"
+    require_file "$TEMPLATES_DIR/frontend/docker-compose.prod.yml" "$FRONTEND_DIR/docker-compose.prod.yml"
+    require_file "$TEMPLATES_DIR/frontend/nginx.conf" "$FRONTEND_DIR/nginx.conf"
+  else
+    require_file "$TEMPLATES_DIR/backend/.env.example" "$BACKEND_DIR/.env.example"
+    require_file "$TEMPLATES_DIR/backend/docker-compose.prod.yml" "$BACKEND_DIR/docker-compose.prod.yml"
+    require_file "$TEMPLATES_DIR/backend/Dockerfile" "$BACKEND_DIR/Dockerfile"
+  fi
+  require_file "$TEMPLATES_DIR/ops/DEPLOY.tpl.md" "$OPS_DIR/DEPLOY.md"
+  require_file "$TEMPLATES_DIR/ops/deploy.tpl.sh" "$OPS_DIR/deploy.sh"
+}
 
   create_gitignore "$PROJECT_DIR/.gitignore"
 
