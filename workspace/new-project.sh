@@ -16,12 +16,12 @@ info() {
   echo "==> $1"
 }
 
-ensure_sudo_available() {
-  command_exists sudo || error "sudo não está disponível no ambiente."
-}
-
 command_exists() {
   command -v "$1" >/dev/null 2>&1
+}
+
+ensure_sudo_available() {
+  command_exists sudo || error "sudo não está disponível no ambiente."
 }
 
 require_file() {
@@ -32,6 +32,15 @@ require_file() {
 require_dir() {
   local dir="$1"
   [ -d "$dir" ] || error "Diretório não encontrado: $dir"
+}
+
+copy_file() {
+  local src="$1"
+  local dest="$2"
+
+  require_file "$src"
+  mkdir -p "$(dirname "$dest")"
+  cp "$src" "$dest"
 }
 
 load_config() {
@@ -48,23 +57,28 @@ load_config() {
 
   require_dir "$WORKSPACE"
   require_dir "$TEMPLATES_DIR"
+
   require_file "$TEMPLATES_DIR/README.tpl.md"
   require_file "$TEMPLATES_DIR/docs/PRD.tpl.md"
   require_file "$TEMPLATES_DIR/docs/ARCHITECTURE.tpl.md"
   require_file "$TEMPLATES_DIR/docs/OPENCLAUDE.local.tpl.md"
+  require_file "$TEMPLATES_DIR/docs/TASKS.tpl.md"
   require_file "$TEMPLATES_DIR/.github/workflows/ci.yml.tpl"
   require_file "$TEMPLATES_DIR/.github/workflows/deploy.yml.tpl"
-  if [[ "PROJECT_TYPE" = 'frontend' ]]; then
+  require_file "$TEMPLATES_DIR/ops/DEPLOY.tpl.md"
+  require_file "$TEMPLATES_DIR/ops/deploy.tpl.sh"
+}
+
+validate_project_type_templates() {
+  if [[ "$PROJECT_TYPE" = "frontend" ]]; then
     require_file "$TEMPLATES_DIR/frontend/.env.example"
     require_file "$TEMPLATES_DIR/frontend/docker-compose.prod.yml"
-    require_file "$TEMPLATES_DIR/frontend/workflows/nginx.conf"
+    require_file "$TEMPLATES_DIR/frontend/nginx.conf"
   else
     require_file "$TEMPLATES_DIR/backend/.env.example"
     require_file "$TEMPLATES_DIR/backend/docker-compose.prod.yml"
     require_file "$TEMPLATES_DIR/backend/Dockerfile"
   fi
-  require_file "$TEMPLATES_DIR/ops/DEPLOY.tpl.md"
-  require_file "$TEMPLATES_DIR/ops/deploy.tpl.sh"
 }
 
 slugify() {
@@ -201,7 +215,7 @@ create_remote_with_gh() {
 }
 
 ensure_github_auth() {
-  command -v gh >/dev/null 2>&1 || error "gh não instalado"
+  command_exists gh || error "gh não instalado"
 
   if ! gh auth status >/dev/null 2>&1; then
     error "GH_TOKEN não configurado"
@@ -266,6 +280,7 @@ main() {
   fi
 
   validate_input
+  validate_project_type_templates
 
   PROJECT_SLUG="$(slugify "$RAW_PROJECT_NAME")"
   [ -n "$PROJECT_SLUG" ] || error "Não foi possível gerar slug do projeto."
@@ -279,7 +294,7 @@ main() {
 
   PROJECT_DIR="${WORKSPACE}/${LOCAL_DIR_NAME}"
   DOCS_DIR="${PROJECT_DIR}/docs"
-  GITHUB_DIR="${PROJECT_DIR}/.github/workspace"
+  GITHUB_WORKFLOWS_DIR="${PROJECT_DIR}/.github/workflows"
   FRONTEND_DIR="${PROJECT_DIR}/frontend"
   BACKEND_DIR="${PROJECT_DIR}/backend"
   OPS_DIR="${PROJECT_DIR}/ops"
@@ -287,8 +302,17 @@ main() {
   [ ! -e "$PROJECT_DIR" ] || error "O diretório já existe: $PROJECT_DIR"
 
   info "Criando estrutura do projeto"
-  sudo mkdir -p "$DOCS_DIR"
-  # Garante que o usuário atual possa escrever nos arquivos gerados a seguir.
+  sudo mkdir -p \
+    "$DOCS_DIR" \
+    "$GITHUB_WORKFLOWS_DIR" \
+    "$OPS_DIR"
+
+  if [[ "$PROJECT_TYPE" = "frontend" ]]; then
+    sudo mkdir -p "$FRONTEND_DIR"
+  else
+    sudo mkdir -p "$BACKEND_DIR"
+  fi
+
   sudo chown -R "$(id -u):$(id -g)" "$PROJECT_DIR"
   sudo chmod -R u+rwX "$PROJECT_DIR"
 
@@ -298,20 +322,22 @@ main() {
   render_template "$TEMPLATES_DIR/docs/OPENCLAUDE.local.tpl.md" "$DOCS_DIR/OPENCLAUDE.local.md"
   render_template "$TEMPLATES_DIR/docs/TASKS.tpl.md" "$DOCS_DIR/TASKS.md"
 
-  render_template "$TEMPLATES_DIR/.github/workflows/ci.yml.tpl" "$GITHUB_DIR/ci.yml"
-  render_template "$TEMPLATES_DIR/.github/workflows/deploy.yml.tpl" "$GITHUB_DIR/deploy.yml"
-  if [[ "PROJECT_TYPE" = 'frontend' ]]; then
-    require_file "$TEMPLATES_DIR/frontend/.env.example" "$FRONTEND_DIR/.env.example"
-    require_file "$TEMPLATES_DIR/frontend/docker-compose.prod.yml" "$FRONTEND_DIR/docker-compose.prod.yml"
-    require_file "$TEMPLATES_DIR/frontend/nginx.conf" "$FRONTEND_DIR/nginx.conf"
+  render_template "$TEMPLATES_DIR/.github/workflows/ci.yml.tpl" "$GITHUB_WORKFLOWS_DIR/ci.yml"
+  render_template "$TEMPLATES_DIR/.github/workflows/deploy.yml.tpl" "$GITHUB_WORKFLOWS_DIR/deploy.yml"
+
+  if [[ "$PROJECT_TYPE" = "frontend" ]]; then
+    copy_file "$TEMPLATES_DIR/frontend/.env.example" "$FRONTEND_DIR/.env.example"
+    copy_file "$TEMPLATES_DIR/frontend/docker-compose.prod.yml" "$FRONTEND_DIR/docker-compose.prod.yml"
+    copy_file "$TEMPLATES_DIR/frontend/nginx.conf" "$FRONTEND_DIR/nginx.conf"
   else
-    require_file "$TEMPLATES_DIR/backend/.env.example" "$BACKEND_DIR/.env.example"
-    require_file "$TEMPLATES_DIR/backend/docker-compose.prod.yml" "$BACKEND_DIR/docker-compose.prod.yml"
-    require_file "$TEMPLATES_DIR/backend/Dockerfile" "$BACKEND_DIR/Dockerfile"
+    copy_file "$TEMPLATES_DIR/backend/.env.example" "$BACKEND_DIR/.env.example"
+    copy_file "$TEMPLATES_DIR/backend/docker-compose.prod.yml" "$BACKEND_DIR/docker-compose.prod.yml"
+    copy_file "$TEMPLATES_DIR/backend/Dockerfile" "$BACKEND_DIR/Dockerfile"
   fi
-  require_file "$TEMPLATES_DIR/ops/DEPLOY.tpl.md" "$OPS_DIR/DEPLOY.md"
-  require_file "$TEMPLATES_DIR/ops/deploy.tpl.sh" "$OPS_DIR/deploy.sh"
-}
+
+  render_template "$TEMPLATES_DIR/ops/DEPLOY.tpl.md" "$OPS_DIR/DEPLOY.md"
+  copy_file "$TEMPLATES_DIR/ops/deploy.tpl.sh" "$OPS_DIR/deploy.sh"
+  chmod +x "$OPS_DIR/deploy.sh"
 
   create_gitignore "$PROJECT_DIR/.gitignore"
 
@@ -319,6 +345,9 @@ main() {
   init_git_repository "$PROJECT_DIR"
 
   if [ "$AUTO_CREATE_REMOTE" = "true" ]; then
+    info "Validando autenticação GitHub"
+    ensure_github_auth
+
     info "Criando repositório remoto no GitHub"
     create_remote_with_gh "$PROJECT_DIR" "$REPO_TARGET"
   else
