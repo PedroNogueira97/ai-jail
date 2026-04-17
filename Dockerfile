@@ -4,9 +4,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV USER=dev
 ENV HOME=/home/dev
 ENV WORKSPACE=/workspace
-ENV MEMORY_PATH=/home/dev/.memory
 
 RUN apt update && apt install -y \
+    software-properties-common \
     bash \
     curl \
     git \
@@ -29,6 +29,22 @@ RUN apt update && apt install -y \
     gawk \
     tree \
     jq \
+    apt-transport-https \
+    && add-apt-repository ppa:ondrej/php -y \
+    && apt-get update && apt-get install -y \
+    php8.3 \
+    php8.3-cli \
+    php8.3-common \
+    php8.3-mysql \
+    php8.3-xml \
+    php8.3-curl \
+    php8.3-mbstring \
+    php8.3-zip \
+    php8.3-intl \
+    php8.3-bcmath \
+    php8.3-opcache \
+    php8.3-sqlite3 \
+    mysql-client \
     && ln -s $(which fdfind) /usr/local/bin/fd \
     && rm -rf /var/lib/apt/lists/*
 
@@ -46,19 +62,22 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     && apt install -y gh \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --break-system-packages basic-memory
-
 RUN useradd -m -s /bin/bash dev \
     && usermod -aG sudo dev \
     && echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev \
     && chmod 0440 /etc/sudoers.d/dev
 
-RUN mkdir -p /workspace /home/dev/.config /home/dev/.memory /home/dev/.ssh \
-    && chown -R dev:dev /workspace /home/dev \
-    && chmod 700 /home/dev/.ssh
+RUN mkdir -p /home/dev/.ssh /home/dev/.config /workspace \
+&& chown -R dev:dev /home/dev /workspace
+
+# Composer
+RUN curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php \
+    && php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer \
+    && rm /tmp/composer-setup.php
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 
 USER dev
 WORKDIR /workspace

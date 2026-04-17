@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   ai-jail:
     build:
@@ -9,14 +7,11 @@ services:
     volumes:
       - ./workspace:/workspace
       - ./config:/home/dev/.config
-      - ./memory:/home/dev/.memory
       - ~/.ssh/id_ed25519.pub:/home/dev/.ssh/id_ed25519.pub:ro
       - ~/.ssh/config:/home/dev/.ssh/config:ro
       - ~/.ssh/known_hosts:/home/dev/.ssh/known_hosts:ro
     environment:
-      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
       GH_TOKEN: ${GH_TOKEN}
-      MEMORY_PATH: /home/dev/.memory
       HOME: /home/dev
       GIT_USER_NAME: ${GIT_USER_NAME}
       GIT_USER_EMAIL: ${GIT_USER_EMAIL}
@@ -43,14 +38,12 @@ services:
     volumes:
       - ./workspace:/workspace
       - ./config:/home/dev/.config
-      - ./memory:/home/dev/.memory
       - ./openclaude-config:/home/dev/.config
       - ~/.ssh/id_ed25519.pub:/home/dev/.ssh/id_ed25519.pub:ro
       - ~/.ssh/config:/home/dev/.ssh/config:ro
       - ~/.ssh/known_hosts:/home/dev/.ssh/known_hosts:ro
     environment:
       HOME: /home/dev
-      MEMORY_PATH: /home/dev/.memory
       GH_TOKEN: ${GH_TOKEN}
       GIT_USER_NAME: ${GIT_USER_NAME}
       GIT_USER_EMAIL: ${GIT_USER_EMAIL}
@@ -61,3 +54,34 @@ services:
     stdin_open: true
     tty: true
     restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    container_name: symfony_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: symfony
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: symfony
+      MYSQL_PASSWORD: symfony
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: symfony_phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root
+    ports:
+      - "8080:80"
+
+volumes:
+  mysql_data:
