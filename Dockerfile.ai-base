@@ -79,3 +79,31 @@ USER dev
 WORKDIR /workspace
 
 CMD ["bash"]
+
+USER root
+
+RUN cat > /usr/local/bin/container-start.sh <<'EOF'
+#!/usr/bin/env bash
+set -e
+
+mkdir -p /home/dev/.ssh
+
+if [ -d /ssh-host ]; then
+  cp -r /ssh-host/* /home/dev/.ssh/ 2>/dev/null || true
+fi
+
+touch /home/dev/.ssh/known_hosts
+ssh-keyscan github.com >> /home/dev/.ssh/known_hosts 2>/dev/null || true
+
+chown -R dev:dev /home/dev/.ssh
+chmod 700 /home/dev/.ssh
+chmod 600 /home/dev/.ssh/id_ed25519 2>/dev/null || true
+chmod 644 /home/dev/.ssh/id_ed25519.pub 2>/dev/null || true
+chmod 644 /home/dev/.ssh/known_hosts
+
+exec su - dev
+EOF
+
+RUN chmod +x /usr/local/bin/container-start.sh
+
+ENTRYPOINT ["/usr/local/bin/container-start.sh"]

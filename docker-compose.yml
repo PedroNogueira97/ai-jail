@@ -8,10 +8,14 @@ services:
   ai-jail:
     build:
       context: .
+      args:
+        UID: ${UID}
+        GID: ${GID}
       dockerfile: Dockerfile
     container_name: ai-jail
     volumes:
-      - ../workspace:/workspace
+      - /home/pedro/workspace:/workspace
+      - /home/pedro/.ssh:/ssh-host:ro
       - ./config:/home/dev/.config
       - ~/.ssh/id_ed25519.pub:/home/dev/.ssh/id_ed25519.pub:ro
       - ~/.ssh/config:/home/dev/.ssh/config:ro

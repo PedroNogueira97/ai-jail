@@ -120,7 +120,7 @@ This will populate ```bash /workspace``` with:
 After moving the files to /workspace, execute **inside the container** (mounted path `/workspace`).
 
 ### Interactive way
-
+GIT
 ```bash
 chmod +x /workspace/new-project.sh
 /workspace/new-project.sh
