@@ -129,13 +129,13 @@ chmod +x /workspace/new-project.sh
 ### Non-interactive
 
 ```bash
-/workspace/new-project.sh "Project name" backend "Project description"
+/workspace/new-project.sh "Project name" "Project description"
 ```
 
-**Example (name + type + description):**
+**Example (name + description):**
 
 ```bash
-/workspace/new-project.sh "CV Agent" backend "AI agent to analyze resumes"
+/workspace/new-project.sh "CV Agent" "AI agent to analyze resumes"
 ```
 
 ---
