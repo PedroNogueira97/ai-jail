@@ -1,333 +1,252 @@
-# ai-jail
+# 🔒 ai-jail
 
-Ambiente de desenvolvimento em **Docker** pensado para rodar o [**Gemini CLI**](https://www.npmjs.com/package/@google/gemini-cli) da Google, o [**basic-memory**](https://pypi.org/project/basic-memory/) (conhecimento local / MCP) e o [**GitHub CLI**](https://cli.github.com/) (`gh`) para automatizar a criação de repositórios a partir de `workspace/new-project.sh`.
+> A Docker-based **AI development environment** designed to run multiple coding assistants in complete isolation — your own personal **AI Dev OS**.
 
-## O que inclui
+Each AI agent runs in its own container while sharing a single, controlled workspace. No conflicts. No leakage. Full reproducibility.
 
-| Componente | Função |
-|------------|--------|
-| **Ubuntu 24.04** | Base com Python **3.12+** (requisito do `basic-memory`). |
-| **Node.js 20** | Runtime para o Gemini CLI (instalado globalmente). |
-| **`@google/gemini-cli`** | Assistente de linha de comando no container. |
-| **`basic-memory`** | Instalado via `pip` no Python do sistema; dados persistentes em `./memory`. |
-| **`gh` (GitHub CLI)** | Instalado via apt; usado pelo script de novo projeto para `gh repo create` e push. |
-| **Ferramentas** | `git`, `curl`, `build-essential`, `vim`, `nano`, `sudo` (utilizador `dev` com sudo). |
+---
 
-A pasta **`workspace/`** reúne convenções para agentes (`GEMINI.md`, `AGENT_WORKFLOW.md`, `GIT_WORKFLOW.md`, `PROJECT.md`, `MEMORY.md`), templates em **`workspace/project-templates/`** e o script **`workspace/new-project.sh`** para gerar novos projetos. Consulte também **`COMANDOS-IMPORTANTES.md`** para referência rápida de comandos.
+## 🤖 Supported AI Agents
 
-### Memória (basic-memory)
+| Agent | Provider | Description |
+|---|---|---|
+| **OpenClaude** | OpenRouter / OpenAI | Multi-provider, cost-optimized |
+| **Claude Code** | Anthropic | Official CLI, best-in-class coding |
+| **Gemini CLI** | Google | Gemini models via terminal |
 
-O **`basic-memory`** usa o volume montado em **`MEMORY_PATH`** (`/home/dev/.memory` no container, **`./memory`** no host). A documentação em **`workspace/MEMORY.md`** define o uso da memória pelos agentes (contexto auxiliar, não fonte de verdade).
+---
 
-## Pré-requisitos
+## 🧠 Architecture
 
-- Docker e Docker Compose (`docker compose`)
-- Conta **GitHub** e permissão para criar repositórios (pessoal ou organização)
-- Chave **Google** para o Gemini: **`GOOGLE_API_KEY`**
+The environment is structured in two layers:
 
-## Configuração do ambiente (`.env`)
+### 🔹 `ai-base` — Shared Base Image
 
-Na raiz do repositório, crie um ficheiro **`.env`** (não versionado). Exemplo de variáveis usadas pelo `docker-compose.yml`:
+A foundational Docker image that all containers extend. It includes:
 
-```env
-GOOGLE_API_KEY=sua_chave_google
-GH_TOKEN=ghp_xxxxxxxx
-GIT_USER_NAME=Seu Nome
-GIT_USER_EMAIL=seu-email@exemplo.com
+- Ubuntu 24.04
+- PHP 8.3
+- Node.js 22
+- Python
+- Git + GitHub CLI (`gh`)
+- Composer
+- Dev tools: `ripgrep`, `jq`, and more
+
+> ⚠️ This image is **not meant to run directly** — it exists to be extended by each AI container.
+
+---
+
+### 🔹 AI Containers
+
+| Container | Purpose |
+|---|---|
+| `ai-jail` | Main development environment |
+| `openclaude` | Multi-provider AI (OpenRouter / OpenAI) |
+| `claudecode` | Official Anthropic Claude Code CLI |
+| `gemini` | Google Gemini CLI |
+
+All containers mount the same shared workspace at `/workspace`.
+
+---
+
+## 📁 Workspace Layout
+
+The workspace lives **outside the repository** to avoid Git conflicts:
+
+```
+~
+├── ai-jail/        ← this repo
+└── workspace/      ← your projects live here
 ```
 
-| Variável | Uso |
-|----------|-----|
-| `GOOGLE_API_KEY` | Gemini CLI / ferramentas que consumam a API Google. |
-| `GH_TOKEN` | Token clássico do GitHub (ex.: âmbito `repo`) — o `gh` usa esta variável quando está definida. |
-| `GIT_USER_NAME` / `GIT_USER_EMAIL` | O **`docker-entrypoint.sh`** aplica automaticamente `git config --global user.name` e `user.email` ao iniciar o container. **Não precisa** de criar nem editar `.gitconfig` à mão no repositório. |
+Each subdirectory inside `/workspace` becomes its own independent Git repository.
 
-**Segurança:** nunca commite `.env` nem tokens. O GitHub pode bloquear push se segredos aparecerem em ficheiros versionados (ex.: evitar versionar `./config/gh/`).
+**Docker volume mapping:**
 
-Subir o ambiente:
+```yaml
+- ../workspace:/workspace
+```
+
+---
+
+## ⚙️ Environment Configuration
+
+Create a `.env` file in the project root:
+
+```env
+# Git
+GH_TOKEN=ghp_xxxxx
+GIT_USER_NAME=Your Name
+GIT_USER_EMAIL=your@email.com
+
+# OpenClaude (OpenAI / OpenRouter)
+OPENAI_API_KEY=
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4o-mini
+
+# Claude Code
+ANTHROPIC_API_KEY=
+
+# Gemini
+GOOGLE_API_KEY=
+```
+
+---
+
+## 🐳 Building the Environment
+
+**Step 1 — Build the base image:**
+
+```bash
+docker build -f Dockerfile.ai-base -t ai-base:latest .
+```
+
+**Step 2 — Build all containers:**
 
 ```bash
 docker compose build
-docker compose up -d
-docker exec -it ai-jail bash
 ```
-
-O `docker-compose.yml` expõe várias **portas** no host (3000, 4000, … até 10000) mapeadas para o mesmo número no container — útil para APIs em desenvolvimento.
 
 ---
 
-## Passo a passo: Git e GitHub (`gh`) no container
+## 🚀 Running Containers
 
-### 1. Identidade do Git (commits)
+You don't need to run everything — spin up only the agents you need.
 
-Preencha **`GIT_USER_NAME`** e **`GIT_USER_EMAIL`** no `.env` e suba o container (`docker compose up -d`). O script **`docker-entrypoint.sh`** configura o Git automaticamente para o utilizador `dev` — não é necessário correr `git config --global` manualmente nem manter um ficheiro `.gitconfig` no projeto.
-
-Se alterar nome ou email no `.env`, **reinicie o container** (`docker compose up -d`). Para confirmar:
+### Base Environment
 
 ```bash
-git config --global user.name
-git config --global user.email
+docker compose up -d ai-jail
+docker compose exec ai-jail bash
 ```
 
-### 2. Autenticação do `gh`
-
-Com **`GH_TOKEN`** já definido no `.env`, o `gh` reconhece o token na sessão. Muitos utilizadores completam o login com uma sessão **HTTPS** interativa:
+### OpenClaude
 
 ```bash
-gh auth login
+docker compose up -d openclaude
+docker compose exec openclaude bash
+
+# Or launch Openclaude directly:
+docker compose exec openclaude openclaude
 ```
 
-Escolha **HTTPS**, **GitHub.com** e o método que preferir (navegador ou token). O estado de autenticação pode persistir em **`./config`** no host (volume montado em `/home/dev/.config`).
-
-Confirme:
+### Claude Code
 
 ```bash
-gh auth status
+docker compose up -d claudecode
+docker compose exec claudecode bash
+
+# Or launch Claude directly:
+docker compose exec claudecode claude
 ```
 
-Se algo falhar, verifique o âmbito do token (`repo`, e organização se aplicável).
-
-### 3. Integração Git ↔ `gh` (opcional)
+### Gemini
 
 ```bash
-gh auth setup-git
+docker compose up -d gemini
+docker compose exec gemini bash
+
+# Or launch Gemini directly:
+docker compose exec gemini gemini
 ```
 
-### 4. Organização / dono do repositório (opcional)
+### Running Multiple Agents Simultaneously
 
-Edite **`workspace/.project-bootstrap.conf`** no host:
-
-- `GITHUB_OWNER=""` — repósito criado na sua conta pessoal.
-- `GITHUB_OWNER="minha-org"` — repósito criado na organização `minha-org` (requer permissões no token/conta).
-
-Outras chaves úteis: `GITHUB_VISIBILITY` (`private`/`public`), `AUTO_CREATE_REMOTE` (`true`/`false`).
+```bash
+docker compose up -d ai-jail openclaude
+```
 
 ---
 
-## Passo a passo: criar um projeto com `new-project.sh`
+## 🧪 Quick Smoke Test
 
-O script gera uma pasta numerada em `/workspace`, ficheiros a partir dos templates em **`workspace/project-templates/`** e, se `AUTO_CREATE_REMOTE=true`, executa **`gh repo create`** com push.
-
-### Pré-requisitos
-
-- Ficheiro **`workspace/.project-bootstrap.conf`** presente e válido.
-- Templates referenciados pelo script (ex.: `README.tpl.md`, `docs/*.tpl.md`).
-- `GIT_USER_NAME` e `GIT_USER_EMAIL` no `.env` (identidade Git aplicada pelo entrypoint).
-- `gh` autenticado e, se usar `gh repo create`, token/sessão válidos (secção anterior).
-
-### Execução no container
+Once inside a container, verify the workspace is accessible:
 
 ```bash
-chmod +x /workspace/new-project.sh
+ls /workspace
 ```
 
-**Modo interativo**
+Create a test project:
+
+```bash
+mkdir /workspace/test
+cd /workspace/test
+git init
+```
+
+---
+
+## 🔐 Permissions
+
+If you encounter permission errors like:
+
+```
+Permission denied
+```
+
+Run this on the **host machine** to fix ownership:
+
+```bash
+sudo chown -R 1000:1000 ../workspace
+sudo chmod -R u+rwX,g+rwX ../workspace
+```
+
+---
+
+## ⚡ Creating a New Project
+
+Use the helper script to scaffold a new project inside `/workspace`:
 
 ```bash
 /workspace/new-project.sh
 ```
 
-**Modo não interativo** (nome, tipo `backend` ou `frontend`, resumo)
+Or pass arguments directly:
 
 ```bash
-/workspace/new-project.sh "Nome do projeto" backend "Resumo em uma frase"
+/workspace/new-project.sh "My Project" backend "Short description"
 ```
-
-O nome da pasta segue o padrão **`{id}-{slug}-{tipo}-dev.local`** (ex.: `1-meuprojeto-backend-dev.local`) e o repositório remoto o padrão **`{id}-{slug}-{tipo}`**, salvo `GITHUB_OWNER` definido.
 
 ---
 
-## Build e execução (resumo)
+## 🧠 Choosing the Right AI Agent
 
-```bash
-docker compose build
-docker compose run --rm ai-jail bash
-```
+| Use Case | Recommended Agent |
+|---|---|
+| Multi-model support / cost optimization | **OpenClaude** |
+| Best coding experience with Claude | **Claude Code** |
+| Google ecosystem / Gemini experiments | **Gemini** |
 
-Ou em segundo plano:
+---
 
-```bash
-docker compose up -d
-docker exec -it ai-jail bash
-```
-
-## Volumes
-
-| Host | Container | Uso |
-|------|-------------|-----|
-| `./workspace` | `/workspace` | Projetos, templates, `new-project.sh`, documentação de agentes. |
-| `./config` | `/home/dev/.config` | Configuração persistente (ex.: ferramentas que gravem em `~/.config`). |
-| `./memory` | `/home/dev/.memory` | Dados do **basic-memory**. |
-
-Crie `config` e `memory` no host se não existirem. O conteúdo de `./memory` é gerido pelo **basic-memory**; evite editar manualmente sem necessidade.
-
-## Permissões (host Linux / WSL)
-
-Ficheiros criados no container podem aparecer no host com UID/GID do utilizador do container. Se o editor reportar *permission denied* no `workspace/`:
-
-```bash
-docker run --rm -v "$(pwd)/workspace:/w" alpine sh -c 'chown -R "$(id -u):$(id -g)" /w && chmod -R u+rwX /w'
-```
-
-*(Executar na raiz do clone `ai-jail` no host.)*
-
-## Estrutura do repositório
+## 🧩 Project Structure
 
 ```
 ai-jail/
-├── Dockerfile
+├── Dockerfile.ai-base       ← shared base image
+├── Dockerfile               ← main ai-jail container
+├── Dockerfile.openclaude    ← OpenClaude container
+├── Dockerfile.claudecode    ← Claude Code container
+├── Dockerfile.geminicli     ← Gemini CLI container
 ├── docker-compose.yml
 ├── docker-entrypoint.sh
-├── COMANDOS-IMPORTANTES.md   # Referência rápida de comandos
-├── .env                      # Não versionar (chaves e tokens)
-├── workspace/
-│   ├── GEMINI.md
-│   ├── AGENT_WORKFLOW.md
-│   ├── GIT_WORKFLOW.md
-│   ├── PROJECT.md
-│   ├── MEMORY.md
-│   ├── new-project.sh
-│   ├── .project-bootstrap.conf
-│   └── project-templates/
-├── config/                   # Volume: config persistente (ex.: gh)
-└── memory/                   # Volume: basic-memory
+├── .env                     ← your secrets (not committed)
+└── ../workspace/            ← external shared workspace
 ```
 
 ---
 
-## CI do ambiente (`ai-jail`)
+## 💡 Philosophy
 
-Este repositório NÃO representa uma aplicação de produção.  
-Ele é um **ambiente de desenvolvimento com IA**, portanto não possui deploy.
-
-Ainda assim, existe um pipeline de **CI (Continuous Integration)** para garantir que mudanças no ambiente não quebrem o workflow.
-
-### O que o CI valida
-
-O workflow (`.github/workflows/ci.yml`) executa:
-
-- Validação do `docker-compose.yml`
-- Build da imagem Docker
-- Subida do container
-- Verificação das principais ferramentas:
-  - `git`
-  - `gh` (GitHub CLI)
-  - `node`
-  - `python`
-  - `basic-memory`
-- Verificação do script:
-  - `/workspace/new-project.sh`
-
-### Objetivo
-
-Garantir que o ambiente continue funcional para:
-
-- criação de projetos
-- uso de agentes (Gemini CLI)
-- uso de memória (`basic-memory`)
-- integração com GitHub (`gh`)
+- **Isolation** — each AI runs in its own sandboxed container
+- **Controlled access** — all agents share one workspace, nothing else
+- **Independence** — each project is a self-contained Git repository
+- **Reproducibility** — the full environment can be rebuilt from scratch at any time
 
 ---
 
-⚠️ Este CI NÃO faz deploy e nunca fará.
+## ⚠️ Important Notes
 
-O deploy acontece nos **projetos gerados dentro do `/workspace`**, não neste repositório.
-
----
-
-## Arquitetura de CI/CD
-
-Este projeto segue uma arquitetura separada:
-
-### 🧱 `ai-jail` (este repositório)
-
-Responsável por:
-
-- ambiente Docker
-- ferramentas (Gemini CLI, basic-memory, gh)
-- convenções de desenvolvimento
-- templates de projetos
-- script de bootstrap (`new-project.sh`)
-
-👉 NÃO é uma aplicação deployável
-
----
-
-### 🚀 Projetos dentro de `/workspace`
-
-Cada projeto criado com:
-
-```bash
-/workspace/new-project.sh
-```
-é um repositório independente, responsável por:
-
-- sua própria aplicação
-- testes
-- build
-- deploy
-- configuração de produção
-
-👉 É nesses projetos que o CI/CD completo acontece
-
-### Fluxo esperado
-
-ai-jail (ambiente)
-   ↓
-new-project.sh
-   ↓
-novo repositório criado (GitHub)
-   ↓
-CI/CD próprio do projeto
-   ↓
-deploy na VPS/Servidor
-
-### Templates de CI/CD para projetos
-
-Já existe uma estrutura preparada em:
-
-```bash
-/workspace/project-templates/
-```
-
-Incluindo:
-
-```bash
-common/
-  .github/workflows/
-    ci.yml.tpl
-    deploy.yml.tpl
-  ops/deploy.sh.tpl
-  docs/DEPLOY.md.tpl
-```
-
-Esses templates permitem que novos projetos já nasçam com:
-
-- pipeline de CI automático
-- pipeline de deploy para VPS via SSH
-- script de deploy com Docker
-- documentação de configuração
-
-### ⚠️ Importante
-
-Atualmente, esses templates ainda não são aplicados automaticamente.
-
-👉 A integração com o new-project.sh será implementada futuramente.
-
-Ou seja:
-
-- a estrutura já existe ✅
-- o pipeline já está pronto ✅
-- mas ainda precisa ser conectado ao bootstrap ❌
-
-## Documentação em `workspace/`
-
-- **`PROJECT.md`** — Estrutura e leitura de projetos em subpastas.
-- **`GEMINI.md`** — Prioridade de instruções e regras do assistente.
-- **`AGENT_WORKFLOW.md`** / **`GIT_WORKFLOW.md`** — Fluxo de trabalho e Git.
-- **`MEMORY.md`** — Uso da memória (basic-memory).
-
-## Licença e upstream
-
-- **Gemini CLI**, **basic-memory** e **GitHub CLI** têm licenças nos respetivos projetos.
-- Este repositório contém Docker, scripts e documentação de ambiente; não inclui o código-fonte upstream dessas ferramentas.
+- This repository is **not directly deployable** to production
+- CI/CD pipelines live **inside projects** created under `/workspace`, not in this repo
+- Never commit your `.env` file — add it to `.gitignore`

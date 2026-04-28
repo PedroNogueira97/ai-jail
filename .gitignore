@@ -1,2 +1,5 @@
 .env
 /workspace/.project-bootstrap.conf
+
+workspace/
+../workspace/

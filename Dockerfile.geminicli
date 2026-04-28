@@ -1,0 +1,13 @@
+FROM ai-base:latest
+
+USER root
+
+RUN npm install -g @google/gemini-cli
+
+COPY gemini-init.sh /usr/local/bin/gemini-init.sh
+RUN chmod +x /usr/local/bin/gemini-init.sh
+
+USER dev
+WORKDIR /workspace
+
+CMD ["/usr/local/bin/gemini-init.sh"]

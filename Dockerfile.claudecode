@@ -1,0 +1,13 @@
+FROM ai-base:latest
+
+USER root
+
+RUN npm install -g @anthropic-ai/claude-code
+
+COPY claudecode-init.sh /usr/local/bin/claudecode-init.sh
+RUN chmod +x /usr/local/bin/claudecode-init.sh
+
+USER dev
+WORKDIR /workspace
+
+CMD ["/usr/local/bin/claudecode-init.sh"]

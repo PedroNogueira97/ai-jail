@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-mkdir -p /home/dev/.config/git /workspace
-export GIT_CONFIG_GLOBAL=/home/dev/.config/git/config
+sudo chown -R dev:dev /workspace /home/dev 2>/dev/null || true
 
 if [ -n "${GIT_USER_NAME:-}" ]; then
   git config --global user.name "$GIT_USER_NAME" || echo "Aviso: não foi possível definir git user.name"
