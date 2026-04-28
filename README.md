@@ -69,6 +69,77 @@ Each subdirectory inside `/workspace` becomes its own independent Git repository
 
 ---
 
+## ⚠️ Initial Setup (Workspace Required)
+
+Before running the environment, you **must create a `/workspace` directory outside of the `ai-jail` repository**.
+
+This is required to avoid Git conflicts and to keep all generated projects isolated.
+
+### 📁 1. Create the workspace folder
+
+From inside the `ai-jail` directory:
+
+```bash
+mkdir -p ../workspace
+
+#Your structure should look like:
+
+~
+├── ai-jail/
+└── workspace/
+```
+
+🔐 2. Fix permissions (IMPORTANT)
+
+Run on the host:
+
+```bash
+sudo chown -R 1000:1000 ../workspace
+sudo chmod -R u+rwX,g+rwX ../workspace
+```
+
+This ensures the Docker containers can read/write files correctly.
+
+📦 3. Initialize workspace files
+
+Copy the base workspace structure:
+
+```bash
+cp -r base-ws-files/* ../workspace/
+```
+
+This will populate ```bash /workspace``` with:
+- docs/
+- project-templates/
+- .project-bootstrap.conf
+- config_mcp.json
+- new-project.sh
+
+## Create a new project (`new-project.sh`)
+
+After moving the files to /workspace, execute **inside the container** (mounted path `/workspace`).
+
+### Interactive way
+
+```bash
+chmod +x /workspace/new-project.sh
+/workspace/new-project.sh
+```
+
+### Non-interactive
+
+```bash
+/workspace/new-project.sh "Project name" backend "Project description"
+```
+
+**Example (name + type + description):**
+
+```bash
+/workspace/new-project.sh "CV Agent" backend "AI agent to analyze resumes"
+```
+
+---
+
 ## ⚙️ Environment Configuration
 
 Create a `.env` file in the project root:
