@@ -17,9 +17,7 @@ services:
       - /home/pedro/workspace:/workspace
       - /home/pedro/.ssh:/ssh-host:ro
       - ./config:/home/dev/.config
-      - ~/.ssh/id_ed25519.pub:/home/dev/.ssh/id_ed25519.pub:ro
-      - ~/.ssh/config:/home/dev/.ssh/config:ro
-      - ~/.ssh/known_hosts:/home/dev/.ssh/known_hosts:ro
+      - ~/.ssh:/ssh-host:ro
     environment:
       GH_TOKEN: ${GH_TOKEN}
       HOME: /home/dev
@@ -46,12 +44,10 @@ services:
     depends_on:
       - ai-jail
     volumes:
-      - ../workspace:/workspace
+      - /home/pedro/workspace:/workspace
       - ./config:/home/dev/.config
       - ./openclaude-config:/home/dev/.config/openclaude
-      - ~/.ssh/id_ed25519.pub:/home/dev/.ssh/id_ed25519.pub:ro
-      - ~/.ssh/config:/home/dev/.ssh/config:ro
-      - ~/.ssh/known_hosts:/home/dev/.ssh/known_hosts:ro
+      - ~/.ssh:/ssh-host:ro
     environment:
       HOME: /home/dev
       GH_TOKEN: ${GH_TOKEN}
@@ -73,12 +69,12 @@ services:
     depends_on:
       - ai-jail
     volumes:
-      - ../workspace:/workspace
+      - /home/pedro/workspace:/workspace
       - ./config:/home/dev/.config
       - ./claudecode-config:/home/dev/.config/claudecode
-      - ~/.ssh/id_ed25519.pub:/home/dev/.ssh/id_ed25519.pub:ro
-      - ~/.ssh/config:/home/dev/.ssh/config:ro
-      - ~/.ssh/known_hosts:/home/dev/.ssh/known_hosts:ro
+      - ~/.ssh:/ssh-host:ro
+      
+      
     environment:
       HOME: /home/dev
       GH_TOKEN: ${GH_TOKEN}
@@ -97,12 +93,10 @@ services:
     depends_on:
       - ai-jail
     volumes:
-      - ../workspace:/workspace
+      - /home/pedro/workspace:/workspace
       - ./config:/home/dev/.config
       - ./gemini-config:/home/dev/.config/gemini
-      - ~/.ssh/id_ed25519.pub:/home/dev/.ssh/id_ed25519.pub:ro
-      - ~/.ssh/config:/home/dev/.ssh/config:ro
-      - ~/.ssh/known_hosts:/home/dev/.ssh/known_hosts:ro
+      - ~/.ssh:/ssh-host:ro
     environment:
       HOME: /home/dev
       GH_TOKEN: ${GH_TOKEN}
