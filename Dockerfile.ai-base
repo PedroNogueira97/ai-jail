@@ -1,9 +1,10 @@
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV USER=dev
-ENV HOME=/home/dev
 ENV WORKSPACE=/workspace
+
+ARG UID=1000
+ARG GID=1000
 
 RUN apt update && apt install -y \
     software-properties-common \
@@ -45,11 +46,11 @@ RUN apt update && apt install -y \
     php8.3-opcache \
     php8.3-sqlite3 \
     mysql-client \
-    && ln -s $(which fdfind) /usr/local/bin/fd \
+    && ln -sf "$(which fdfind)" /usr/local/bin/fd \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt install -y nodejs \
+    && apt-get install -y nodejs \
     && npm config set registry https://registry.npmjs.org/ \
     && rm -rf /var/lib/apt/lists/*
 
@@ -58,52 +59,40 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
       > /etc/apt/sources.list.d/github-cli.list \
-    && apt update \
-    && apt install -y gh \
+    && apt-get update \
+    && apt-get install -y gh \
     && rm -rf /var/lib/apt/lists/*
-
-RUN useradd -m -s /bin/bash dev \
-    && usermod -aG sudo dev \
-    && echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev \
-    && chmod 0440 /etc/sudoers.d/dev
-
-RUN mkdir -p /home/dev/.ssh /home/dev/.config /home/dev/.memory /workspace \
-    && chown -R dev:dev /home/dev /workspace \
-    && chmod 700 /home/dev/.ssh
 
 RUN curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php \
     && php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer \
     && rm /tmp/composer-setup.php
 
-USER dev
+RUN set -eux; \
+    if getent group "${GID}" >/dev/null; then \
+        group_name="$(getent group "${GID}" | cut -d: -f1)"; \
+        if [ "$group_name" != "dev" ]; then groupmod -n dev "$group_name" || true; fi; \
+    else \
+        groupadd -g "${GID}" dev; \
+    fi; \
+    if getent passwd "${UID}" >/dev/null; then \
+        user_name="$(getent passwd "${UID}" | cut -d: -f1)"; \
+        if [ "$user_name" != "dev" ]; then usermod -l dev "$user_name" || true; fi; \
+        usermod -d /home/dev -m dev || true; \
+    else \
+        useradd -m -u "${UID}" -g "${GID}" -s /bin/bash dev; \
+    fi; \
+    usermod -g "${GID}" dev || true; \
+    usermod -aG sudo dev; \
+    echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev; \
+    chmod 0440 /etc/sudoers.d/dev; \
+    mkdir -p /home/dev/.ssh /home/dev/.config /home/dev/.memory /workspace; \
+    chown -R dev:dev /home/dev /workspace; \
+    chmod 700 /home/dev/.ssh
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 WORKDIR /workspace
 
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["bash"]
-
-USER root
-
-RUN cat > /usr/local/bin/container-start.sh <<'EOF'
-#!/usr/bin/env bash
-set -e
-
-mkdir -p /home/dev/.ssh
-
-if [ -d /ssh-host ]; then
-  cp -r /ssh-host/* /home/dev/.ssh/ 2>/dev/null || true
-fi
-
-touch /home/dev/.ssh/known_hosts
-ssh-keyscan github.com >> /home/dev/.ssh/known_hosts 2>/dev/null || true
-
-chown -R dev:dev /home/dev/.ssh
-chmod 700 /home/dev/.ssh
-chmod 600 /home/dev/.ssh/id_ed25519 2>/dev/null || true
-chmod 644 /home/dev/.ssh/id_ed25519.pub 2>/dev/null || true
-chmod 644 /home/dev/.ssh/known_hosts
-
-exec su - dev
-EOF
-
-RUN chmod +x /usr/local/bin/container-start.sh
-
-ENTRYPOINT ["/usr/local/bin/container-start.sh"]

@@ -4,6 +4,9 @@ services:
       context: .
       dockerfile: Dockerfile.ai-base
     image: ai-base:latest
+    volumes:
+      - /home/pedro/workspace:/workspace
+      - /home/pedro/.ssh:/ssh-host:ro
 
   ai-jail:
     build:
