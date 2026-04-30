@@ -64,7 +64,7 @@ load_config() {
 
   require_file "$TEMPLATES_DIR/docs/AGENT.local.md"
   require_file "$TEMPLATES_DIR/docs/ARCHITECTURE.md"
-  require_file "$TEMPLATES_DIR/docs/DECISIONS.md"
+  require_file "$TEMPLATES_DIR/docs/SESSION_LOG.md"
   require_file "$TEMPLATES_DIR/docs/PRD.md"
   require_file "$TEMPLATES_DIR/docs/TASKS.md"
 
@@ -313,7 +313,7 @@ main() {
 
   render_template "$TEMPLATES_DIR/docs/AGENT.local.md" "$DOCS_DIR/AGENT.local.md"
   render_template "$TEMPLATES_DIR/docs/ARCHITECTURE.md" "$DOCS_DIR/ARCHITECTURE.md"
-  render_template "$TEMPLATES_DIR/docs/DECISIONS.md" "$DOCS_DIR/DECISIONS.md"
+  render_template "$TEMPLATES_DIR/docs/SESSION_LOG.md" "$DOCS_DIR/SESSION_LOG.md"
   render_template "$TEMPLATES_DIR/docs/PRD.md" "$DOCS_DIR/PRD.md"
   render_template "$TEMPLATES_DIR/docs/TASKS.md" "$DOCS_DIR/TASKS.md"
 

@@ -80,3 +80,15 @@ docker compose up -d --build
 | Git / `gh` | login, criar repo, variáveis |
 | Nest / Node | `npm run`, testes |
 | Depuração | portas, logs do container |
+
+## Detalhe prático ao trocar de Agente:
+
+```
+Leia em ordem:
+1. /workspace/docs/CONSTRAINTS.md
+2. /workspace/docs/AGENT_WORKFLOW.md  
+3. /workspace/projeto/docs/SESSION_LOG.md (últimas 2 entradas)
+4. /workspace/projeto/docs/TASKS.md
+
+Me confirme o status atual do projeto antes de qualquer ação.
+```
